@@ -89,10 +89,14 @@ int main(void) {
 
 	uint8_t x, y, z;
 
+	char debugTxt[50];
+
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, &address, 1, 50);
 	HAL_SPI_Transmit(&hspi1, &data, 1, 50);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+
+	int rotateThreshold = 20;
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -116,10 +120,12 @@ int main(void) {
 		HAL_SPI_Transmit(&hspi1, &address, 1, 50);
 		HAL_SPI_Receive(&hspi1, &z, 1, 50);
 
-		if (x < 60) {
+		if (x < 255 - rotateThreshold && x > 128) {
+			// Left On
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		} else if (x > 240) {
+		} else if (x <= 128 && x > rotateThreshold) {
+			// Right On
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
 		} else {
@@ -127,16 +133,23 @@ int main(void) {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
 		}
 
-		if (y < 60) {
+		if (y > rotateThreshold && y < 128) {
+			// Up On
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-		} else if (y > 240) {
+		} else if (y >= 128 && y < 255 - rotateThreshold) {
+			// Down On
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
 		} else {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 		}
+
+		for(int i = 0; i < 50; ++i) debugTxt[i] = 0;
+
+		sprintf(debugTxt, "\r\nAccelerometer - x: %d, y: %d, z: %d", x, y, z);
+		HAL_UART_Transmit(&huart2, debugTxt, 50, 100);
 	}
 	/* USER CODE END 3 */
 
