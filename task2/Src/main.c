@@ -61,7 +61,7 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-#define PDM_BUFFER_SIZE 20
+#define PDM_BUFFER_SIZE 16
 /* USER CODE END 0 */
 
 int main(void)
@@ -115,15 +115,12 @@ int main(void)
 			for(j=0; j<16; j++) {
 				if(bit_position & buffer[i]) {
 					pdm_count++;
-				} else {
-					if(pdm_count > loud_result) loud_result = pdm_count;
-					pdm_count = 0;
 				}
 				bit_position >>= 1;
 			}
 		}
 
-		if(pdm_count > 3) {
+		if(pdm_count > 100) {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 			HAL_Delay(300);
 		} else {
