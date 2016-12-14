@@ -125,7 +125,7 @@ int main(void)
 
 		if(pdm_count > 3) {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-			HAL_Delay(100);
+			HAL_Delay(300);
 		} else {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 		}
