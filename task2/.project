@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>task1</name>
-	<comment></comment>
+	<name>task2</name>
+	<comment />
 	<projects>
 	</projects>
 	<buildSpec>
@@ -24,4 +24,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>fr.ac6.mcu.ide.core.MCUProjectNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name />
+			<type />
+			<location />
+		</link>
+	</linkedResources>
 </projectDescription>
