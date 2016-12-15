@@ -41,7 +41,10 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+I2S_HandleTypeDef hi2s2;
 I2S_HandleTypeDef hi2s3;
+
+SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
 
@@ -57,7 +60,9 @@ void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
+static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
 
@@ -67,10 +72,8 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
 uint16_t temp[100];
 uint8_t sound_send_data[2];
-uint8_t chord;
 
 int Transmit_Audio_Data(uint8_t address,uint8_t data){
 	sound_send_data[0] = address;
@@ -78,33 +81,9 @@ int Transmit_Audio_Data(uint8_t address,uint8_t data){
 	return HAL_I2C_Master_Transmit(&hi2c1,0x94,sound_send_data,2,50);
 }
 
-uint8_t Mapping_Choord(uint8_t character) {
-	if(character >= 'a' && character <= 'z')
-		character = character - 'a' + 'A';
-	switch(character) {
-	case 'A': return 0x0A;
-	case 'S': return 0x1A;
-	case 'D': return 0x2D;
-	case 'F': return 0x3D;
-	case 'G': return 0x4D;
-	case 'H': return 0x5D;
-	case 'J': return 0x6D;
-	case 'K': return 0x7D;
-	case 'L': return 0x8D;
-	}
+void Play_Sound(uint8_t chord){
 
-	return 0x00;
-}
-
-void Play_Sound(uint8_t character){
-
-	chord = Mapping_Choord(character);
 	if(chord == 0x00) return;
-
-	uint8_t uart_message[20];
-	sprintf(uart_message, "Chord: %c\n\r", character);
-
-	HAL_UART_Transmit(&huart2,&uart_message,20,100);
 
 	Transmit_Audio_Data(0x1E,0x20);
 	Transmit_Audio_Data(0x1C,chord);
@@ -156,12 +135,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
+  MX_I2S2_Init();
   MX_I2S3_Init();
+  MX_SPI1_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  uint8_t character;
   Audio_Init();
   /* USER CODE END 2 */
 
@@ -172,21 +152,16 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  Play_Sound('A');
+	  Play_Sound(0x1A);
 	  HAL_Delay(100);
-	  Play_Sound('S');
+	  Play_Sound(0x3A);
 	  HAL_Delay(100);
-	  Play_Sound('D');
+	  Play_Sound(0x5A);
 	  HAL_Delay(100);
-	  Play_Sound('F');
+	  Play_Sound(0x7A);
 	  HAL_Delay(100);
-	  Play_Sound('G');
+	  Play_Sound(0x9A);
 	  HAL_Delay(100);
-
-//	  if(HAL_UART_Recieve(&huart2, &character, 1, 100) == HAL_OK) {
-//		  Play_Sound(character);
-//		  HAL_Delay(100);
-//	  }
   }
   /* USER CODE END 3 */
 
@@ -277,6 +252,26 @@ static void MX_I2C1_Init(void)
 
 }
 
+/* I2S2 init function */
+static void MX_I2S2_Init(void)
+{
+
+  hi2s2.Instance = SPI2;
+  hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
+  hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_192K;
+  hi2s2.Init.CPOL = I2S_CPOL_LOW;
+  hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
+  hi2s2.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
+  if (HAL_I2S_Init(&hi2s2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
 /* I2S3 init function */
 static void MX_I2S3_Init(void)
 {
@@ -291,6 +286,29 @@ static void MX_I2S3_Init(void)
   hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
   hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
   if (HAL_I2S_Init(&hi2s3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
+/* SPI1 init function */
+static void MX_SPI1_Init(void)
+{
+
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -355,11 +373,6 @@ static void MX_USART2_UART_Init(void)
         * Output
         * EVENT_OUT
         * EXTI
-     PC3   ------> I2S2_SD
-     PA5   ------> SPI1_SCK
-     PA6   ------> SPI1_MISO
-     PA7   ------> SPI1_MOSI
-     PB10   ------> I2S2_CK
      PA9   ------> USB_OTG_FS_VBUS
      PA10   ------> USB_OTG_FS_ID
      PA11   ------> USB_OTG_FS_DM
@@ -402,35 +415,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PDM_OUT_Pin */
-  GPIO_InitStruct.Pin = PDM_OUT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA5 PA6 PA7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pin : BOOT1_Pin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CLK_IN_Pin */
-  GPIO_InitStruct.Pin = CLK_IN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(CLK_IN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin 
                            Audio_RST_Pin */
