@@ -74,7 +74,6 @@ int main(void)
 	char display_buffer[16];
 
 	uint16_t pdm_count;
-	uint16_t loud_result;
 	uint16_t bit_position;
 
 	uint32_t start_time = HAL_GetTick();
@@ -108,7 +107,6 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
   	pdm_count = 0;
-  	loud_result = 0;
 
 		for(i=0; i<PDM_BUFFER_SIZE; i++) {
 			bit_position = (1<<15);
@@ -130,7 +128,7 @@ int main(void)
 		cur_time = HAL_GetTick();
 		if(cur_time - start_time > 100){
 			start_time = cur_time;
-			sprintf(display_buffer, "Loud : %d\n", loud_result);
+			sprintf(display_buffer, "Loud : %d\n", pdm_count);
 			HAL_UART_Transmit(&huart2, (uint8_t*)display_buffer, strlen(display_buffer), 100);
 		}
   }
