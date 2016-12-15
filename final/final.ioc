@@ -2,10 +2,12 @@
 File.Version=6
 I2C1.ClockSpeed=50000
 I2C1.IPParameters=ClockSpeed
-I2S2.AudioFreq=I2S_AUDIOFREQ_192K
-I2S2.ErrorAudioFreq=2.3 %
-I2S2.IPParameters=AudioFreq,RealAudioFreq,ErrorAudioFreq
-I2S2.RealAudioFreq=196.428 KHz
+I2S2.AudioFreq=I2S_AUDIOFREQ_44K
+I2S2.ErrorAudioFreq=0.8 %
+I2S2.IPParameters=AudioFreq,RealAudioFreq,ErrorAudioFreq,Standard,Mode
+I2S2.Mode=I2S_MODE_MASTER_RX
+I2S2.RealAudioFreq=44.354 KHz
+I2S2.Standard=I2S_STANDARD_PHILIPS
 I2S3.AudioFreq=I2S_AUDIOFREQ_44K
 I2S3.ErrorAudioFreq=-2.34 %
 I2S3.IPParameters=AudioFreq,RealAudioFreq,ErrorAudioFreq

@@ -68,12 +68,14 @@ static void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+#define PDM_BUFFER_SIZE 16
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
 uint16_t temp[100];
-uint8_t sound_send_data[2];
+uint8_t sound_send_data[PDM_BUFFER_SIZE];
+
+uint16_t pdm_buffer[PDM_BUFFER_SIZE];
 
 int Transmit_Audio_Data(uint8_t address,uint8_t data){
 	sound_send_data[0] = address;
@@ -115,6 +117,32 @@ void Audio_Init(){
 	Transmit_Audio_Data(0x1D,0x0F);
 
 }
+
+int Is_Loud() {
+
+	uint16_t bit_position;
+
+	HAL_I2S_Receive(&hi2s2, pdm_buffer, PDM_BUFFER_SIZE, 100);
+
+	uint16_t pdm_count = 0;
+
+	int i, j;
+	for (i = 0; i < PDM_BUFFER_SIZE; i++) {
+		bit_position = (1 << 15);
+		for (j = 0; j < 16; j++) {
+			if (bit_position & pdm_buffer[i]) {
+				pdm_count++;
+			}
+			bit_position >>= 1;
+		}
+	}
+
+	if (pdm_count > 130) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -152,15 +180,14 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
+
+	  if(Is_Loud()) {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+	  } else {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+	  }
+
 	  Play_Sound(0x1A);
-	  HAL_Delay(100);
-	  Play_Sound(0x3A);
-	  HAL_Delay(100);
-	  Play_Sound(0x5A);
-	  HAL_Delay(100);
-	  Play_Sound(0x7A);
-	  HAL_Delay(100);
-	  Play_Sound(0x9A);
 	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
@@ -257,11 +284,11 @@ static void MX_I2S2_Init(void)
 {
 
   hi2s2.Instance = SPI2;
-  hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
+  hi2s2.Init.Mode = I2S_MODE_MASTER_RX;
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_192K;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_44K;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
   hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
   hi2s2.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
