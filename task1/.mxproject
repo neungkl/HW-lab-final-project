@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=/Users/neungkl/Work/Study/Lab/final/Inc
+HeaderPath=/Users/neungkl/Work/STM32F4-hardware-project/task1/Inc
 HeaderFiles=stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;
-SourcePath=/Users/neungkl/Work/Study/Lab/final/Src
+SourcePath=/Users/neungkl/Work/STM32F4-hardware-project/task1/Src
 SourceFiles=stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;stm32f4xx_it.c;stm32f4xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]
