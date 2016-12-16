@@ -73,7 +73,8 @@ static void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN 0 */
 
-int Accelerometer_Get_Direction();
+void Sound_Random();
+uint8_t Accelerometer_Get_Direction();
 
 // ###################
 // #                 #
@@ -81,15 +82,25 @@ int Accelerometer_Get_Direction();
 // #                 #
 // ###################
 
-uint8_t INIT = 0;
-uint8_t WAITING = 1;
-uint8_t PLAY = 2;
-uint8_t DIE = 3;
+uint8_t BEFORE_INIT = 0;
+uint8_t INIT = 1;
+uint8_t WAITING = 2;
+uint8_t PLAY_INTRODUCE = 3;
+uint8_t PLAY = 4;
+uint8_t DIE = 5;
 
 uint8_t LEFT = 0;
 uint8_t RIGHT = 1;
 uint8_t UP = 2;
 uint8_t DOWN = 3;
+
+uint8_t DISPLAY_INIT = 0;
+uint8_t DISPLAY_WAITING = 1;
+uint8_t DISPLAY_LEFT = 2;
+uint8_t DISPLAY_RIGHT = 3;
+uint8_t DISPLAY_UP = 4;
+uint8_t DISPLAY_DOWN = 5;
+uint8_t DISPLAY_DIE = 6;
 
 uint16_t i, j, k;
 uint8_t gState = 0;
@@ -97,7 +108,7 @@ uint8_t gState = 0;
 uint8_t gStartMsg[9][18] = {
 	"+--------------+\n\r",
 	"|              |\n\r",
-	"|   Response   |\n\r",
+	"|   Remember   |\n\r",
 	"|     Game     |\n\r",
 	"|              |\n\r",
 	"|==============|\n\r",
@@ -106,7 +117,7 @@ uint8_t gStartMsg[9][18] = {
 	"+--------------+\n\r"
 };
 
-uint8_t gIdleMsg[9][18] = {
+uint8_t gWaitMsg[9][18] = {
 	"+--------------+\n\r",
 	"|              |\n\r",
 	"|   Waiting..  |\n\r",
@@ -166,7 +177,7 @@ uint8_t gRightMsg[9][18] = {
 	"+--------------+\n\r"
 };
 
-uint8_t gLoseMsg[9][18] = {
+uint8_t gDieMsg[9][18] = {
 	"+--------------+\n\r",
 	"|              |\n\r",
 	"|      You     |\n\r",
@@ -178,95 +189,84 @@ uint8_t gLoseMsg[9][18] = {
 	"+--------------+\n\r"
 };
 
-uint8_t gBuffer[7][14];
 uint32_t gPrevTime;
 uint32_t gCurTime;
 
-uint32_t rPrevTime;
-uint32_t rCurTime;
-
-uint8_t gCurrentDirection;
-uint8_t gDirectionTime;
+uint8_t gArrows[100];
+uint32_t gArrowLength;
 
 uint32_t random() {
 	return HAL_GetTick();
 }
 
+void Game_Display(uint8_t type) {
+	uint8_t **S;
+
+	if(type == DISPLAY_INIT) S = gStartMsg;
+	else if(type == DISPLAY_WAITING) S = gWaitMsg;
+	else if(type == DISPLAY_UP) S = gUpMsg;
+	else if(type == DISPLAY_DOWN) S = gDownMsg;
+	else if(type == DISPLAY_LEFT) S = gLeftMsg;
+	else if(type == DISPLAY_RIGHT) S = gRightMsg;
+	else if(type == DISPLAY_DIE) S = gDieMsg;
+
+	for(i=0; i<9; i++) {
+		HAL_UART_Transmit(&huart2, S[i], 18, 100);
+	}
+	HAL_UART_Transmit(&huart2, (uint8_t*)"\n\r", 2, 100);
+}
+
+uint32_t Game_Random() {
+	return HAL_GetTick() / 10;
+}
+
 void Game_Init() {
-	for(i=0; i<7; i++) {
-		for(j=0; j<14; j++) gBuffer[i][j] = 0;
+	gArrowLength = 0;
+}
+
+void Game_Show_Light_Direction(uint8_t direction, uint16_t delay) {
+	uint16_t pinNum = 0;
+
+	switch(direction) {
+	case 0 : pinNum = GPIO_PIN_12; break; // LEFT
+	case 1 : pinNum = GPIO_PIN_14; break; // RIGHT
+	case 2 : pinNum = GPIO_PIN_13; break; // UP
+	case 3 : pinNum = GPIO_PIN_15; break; // DOWN
+	}
+
+	HAL_GPIO_WritePin(GPIOD, pinNum, GPIO_PIN_SET);
+	HAL_Delay(delay);
+	HAL_GPIO_WritePin(GPIOD, pinNum, GPIO_PIN_RESET);
+}
+
+void Game_Play_Introduce() {
+	gArrows[gArrowLength] = Game_Random() % 4;
+	gArrowLength++;
+
+	uint16_t pinNum = 0;
+
+	for(i=0; i<gArrowLength; i++) {
+		Sound_Random();
+		Game_Show_Light_Direction(gArrows[i], 500);
+		HAL_Delay(200);
 	}
 }
 
-void Game_Random_Direction() {
-	gCurrentDirection = random() % 4;
-	gDirectionTime = random() % 1000 + 200;
-}
-
-int Game_Die() {
-
-	uint8_t dir = Accelerometer_Get_Direction();
-	if(dir == 5) return 0;
-
-	if(dir != gCurrentDirection) return 0;
-
-	uint8_t pass = 0;
-	for(i = 0; i<7; i++) {
-		for(j=0; j<14; j++) {
-			if(gBuffer[i][j] == ' ') pass = 1;
-		}
-	}
-
-	return pass;
-}
-
-void Game_Random_Decrease_Life() {
-	if(random() % 10 != 0) return ;
-
-	uint8_t N = 7 * 14;
-	uint8_t pos = random() % N;
-
-	for(i=0; i<N; i++) {
-		pos++;
-		if(pos >= N) pos = 0;
-		if(gBuffer[pos / 14][pos % 14] == ' ') {
-			gBuffer[pos / 14][pos % 14] = '.';
-			break;
-		}
-	}
-}
-
-void Game_Render() {
-	if(gState == INIT) {
-		for(i=0; i<7; i++) {
-			HAL_UART_Transmit(&huart2, (uint8_t*) gStartMsg[i], 18, 100);
-		}
-	} else if(gState == WAITING) {
-		for(i=0; i<7; i++) {
-			HAL_UART_Transmit(&huart2, (uint8_t*) gIdleMsg[i], 18, 100);
-		}
-	} else if(gState == DIE) {
-		for(i=0; i<7; i++) {
-			HAL_UART_Transmit(&huart2, (uint8_t*) gLoseMsg[i], 18, 100);
-		}
-	} else if(gState == PLAY) {
-		uint8_t **msg;
-
-		if(gCurrentDirection == LEFT) msg = gLeftMsg;
-		else if(gCurrentDirection == RIGHT) msg = gRightMsg;
-		else if(gCurrentDirection == UP) msg = gUpMsg;
-		else msg = gDownMsg;
-
-		for(i=0; i<9; i++) {
-			for(j=0; j<18; j++) {
-				if(msg[i][j] == ' ') {
-					HAL_UART_Transmit(&huart2, &msg[i][j], 1, 100);
-				} else {
-					HAL_UART_Transmit(&huart2, &gBuffer[i-1][j-1], 1, 100);
-				}
+uint8_t Game_Check() {
+	for(i=0;i <gArrowLength; i++) {
+		while(1) {
+			uint8_t userDir = Accelerometer_Get_Direction();
+			if(userDir == 5) continue;
+			Game_Show_Light_Direction(userDir, 500);
+			if(userDir == gArrows[i]) {
+				break;
+			} else {
+				return 0;
 			}
 		}
 	}
+
+	return 1;
 }
 
 // ###################
@@ -286,7 +286,7 @@ int Transmit_Audio_Data(uint8_t address, uint8_t data) {
 	return HAL_I2C_Master_Transmit(&hi2c1, 0x94, sSendData, 2, 50);
 }
 
-void Play_Sound(uint8_t chord) {
+void Sound_Play(uint8_t chord) {
 
 	if (chord == 0x00)
 		return;
@@ -298,6 +298,19 @@ void Play_Sound(uint8_t chord) {
 	int i;
 	for (i = 0; i < 100; i++)
 		HAL_I2S_Transmit(&hi2s3, sTemp, 100, 10);
+}
+
+void Sound_Random() {
+	switch(random() % 8) {
+	case 0 : Sound_Play(0x1A); break;
+	case 1 : Sound_Play(0x2A); break;
+	case 2 : Sound_Play(0x3A); break;
+	case 3 : Sound_Play(0x4A); break;
+	case 4 : Sound_Play(0x5A); break;
+	case 5 : Sound_Play(0x6A); break;
+	case 6 : Sound_Play(0x7A); break;
+	case 7 : Sound_Play(0x8A); break;
+	}
 }
 
 void Audio_Init() {
@@ -340,25 +353,29 @@ void Accelerometer_Init() {
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 }
 
-int Accelerometer_Get_Direction() {
+uint8_t Accelerometer_Get_Direction() {
 	uint8_t aX, aY, aZ;
 	uint8_t aAddress;
 
 	int rotateThreshold = 20;
 
-	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
-
 	aAddress = 0x29 | 0x80;
+	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, &aAddress, 1, 50);
 	HAL_SPI_Receive(&hspi1, &aX, 1, 50);
+	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
 
 	aAddress = 0x2B | 0x80;
+	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, &aAddress, 1, 50);
 	HAL_SPI_Receive(&hspi1, &aY, 1, 50);
+	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
 
 	aAddress = 0x2C | 0x80;
+	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, &aAddress, 1, 50);
 	HAL_SPI_Receive(&hspi1, &aZ, 1, 50);
+	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
 
 	if (aX < 255 - rotateThreshold && aX > 128) {
 		// Left On
@@ -404,7 +421,7 @@ int Is_Loud() {
 		}
 	}
 
-	if (pdm_count > 130) {
+	if (pdm_count > 140) {
 		return 1;
 	} else {
 		return 0;
@@ -441,9 +458,8 @@ int main(void)
 	Accelerometer_Init();
 
 	gPrevTime = HAL_GetTick();
-	rPrevTime = gPrevTime;
+	gState = BEFORE_INIT;
 
-	int rotateThreshold = 20;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -453,90 +469,89 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
 
-//		if(gState == INIT) {
-//			if(Is_Loud()) {
-//				Game_Init();
-//				gState == WAITING;
-//			}
-//		} else if(gState == WAITING) {
-//			gCurTime = HAL_GetTick();
-//			if(gCurTime - gPrevTime > 1500) {
-//				gPrevTime = gCurTime;
-//				gState = PLAY;
-//				Game_Random_Direction();
-//			}
-//		} else if(gState == PLAY) {
-//			gCurTime = HAL_GetTick();
-//			if(gCurTime - gPrevTime > gDirectionTime) {
-//				Game_Random_Direction();
-//			} else {
-//				if(Game_Die()) {
-//					gState = DIE;
-//				} else {
-//					Game_Random_Decrease_Life();
-//				}
-//			}
-//		} else if(gState == DIE) {
-//			if(Is_Loud()) {
-//				gState = INIT;
-//			}
-//		}
-
-//		rCurTime = HAL_GetTick();
-//		if(rCurTime - rPrevTime > 100) {
-//			Game_Render();
-//			rPrevTime = rCurTime;
-//		}
-
-		uint8_t aX, aY, aZ;
-		uint8_t aAddress;
-
-		aAddress = 0x29 | 0x80;
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi1, &aAddress, 1, 50);
-		HAL_SPI_Receive(&hspi1, &aX, 1, 50);
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
-
-		aAddress = 0x2B | 0x80;
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi1, &aAddress, 1, 50);
-		HAL_SPI_Receive(&hspi1, &aY, 1, 50);
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
-
-		aAddress = 0x2C | 0x80;
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
-		HAL_SPI_Transmit(&hspi1, &aAddress, 1, 50);
-		HAL_SPI_Receive(&hspi1, &aZ, 1, 50);
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
-
-		if (aX < 255 - rotateThreshold && aX > 128) {
-			// Left On
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		} else if (aX <= 128 && aX > rotateThreshold) {
-			// Right On
+		if(gState == BEFORE_INIT) {
+			if(Is_Loud()) {
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+				HAL_Delay(500);
+				gState = INIT;
+				//Game_Display(DISPLAY_INIT);
+			} else {
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+			}
+		} else if(gState == INIT) {
+			gCurTime = HAL_GetTick();
+			if(Is_Loud()) {
+				gState = WAITING;
+				gCurTime = 0;
+				Game_Init();
+			} else {
+				if(gCurTime - gPrevTime > 500) {
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
+					gPrevTime = gCurTime;
+				}
+				Sound_Random();
+			}
+		} else if(gState == WAITING) {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		} else {
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+			for(i=0; i<2; i++) {
+				for(j=0; j<4; j++) {
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12 << j);
+					switch(j) {
+					case 0 : Sound_Play(0x1A); break;
+					case 1 : Sound_Play(0x2A); break;
+					case 2 : Sound_Play(0x3A); break;
+					case 3 : Sound_Play(0x4A); break;
+					}
+					HAL_Delay(20);
+				}
+			}
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+			HAL_Delay(750);
+			gState = PLAY_INTRODUCE;
+		} else if(gState == PLAY_INTRODUCE) {
+			Game_Play_Introduce();
+			gState = PLAY;
+		} else if(gState == PLAY) {
+			if(Game_Check()) {
+				HAL_Delay(500);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+				Sound_Play(0x3A);
+				HAL_Delay(60);
+				Sound_Play(0x4A);
+				HAL_Delay(60);
+				Sound_Play(0x5A);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+				HAL_Delay(500);
+				gState = PLAY_INTRODUCE;
+			} else {
+				for(i=0; i<10; i++) {
+					Sound_Play(0x5A);
+				}
+				HAL_Delay(200);
+				gState = DIE;
+			}
+
+		} else if(gState == DIE) {
+			HAL_Delay(1000);
+			gState = INIT;
+			//Game_Display(DISPLAY_INIT);
 		}
 
-		if (aY > rotateThreshold && aY < 128) {
-			// Up On
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-		} else if (aY >= 128 && aY < 255 - rotateThreshold) {
-			// Down On
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
-		} else {
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-		}
-
-		Play_Sound(0x1A);
-		HAL_Delay(100);
 	}
   /* USER CODE END 3 */
 
