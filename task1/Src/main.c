@@ -106,20 +106,24 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-		// HAL_SPI_Transmit
-		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 
 		address = 0x29 | 0x80;
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 		HAL_SPI_Transmit(&hspi1, &address, 1, 50);
 		HAL_SPI_Receive(&hspi1, &x, 1, 50);
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
 
 		address = 0x2B | 0x80;
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 		HAL_SPI_Transmit(&hspi1, &address, 1, 50);
 		HAL_SPI_Receive(&hspi1, &y, 1, 50);
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
 
 		address = 0x2C | 0x80;
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_RESET);
 		HAL_SPI_Transmit(&hspi1, &address, 1, 50);
 		HAL_SPI_Receive(&hspi1, &z, 1, 50);
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,GPIO_PIN_SET);
 
 		if (x < 255 - rotateThreshold && x > 128) {
 			// Left On

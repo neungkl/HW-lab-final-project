@@ -102,9 +102,9 @@ void Play_Sound(uint8_t character){
 	if(chord == 0x00) return;
 
 	uint8_t uart_message[20];
-	sprintf(uart_message, "Chord: %c\n\r", character);
+	sprintf(uart_message, "\r\nChord: %c\0", character);
 
-	HAL_UART_Transmit(&huart2,&uart_message,20,100);
+	HAL_UART_Transmit(&huart2,(uint8_t*)uart_message, strlen(uart_message),100);
 
 	Transmit_Audio_Data(0x1E,0x20);
 	Transmit_Audio_Data(0x1C,chord);
@@ -133,7 +133,7 @@ void Audio_Init(){
 	Transmit_Audio_Data(0x02,0x9E);
 
 	// Adjust Volume
-	Transmit_Audio_Data(0x1D,0x0F);
+	// Transmit_Audio_Data(0x1D,0x0F);
 
 }
 /* USER CODE END 0 */
@@ -172,21 +172,21 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  Play_Sound('A');
-	  HAL_Delay(100);
-	  Play_Sound('S');
-	  HAL_Delay(100);
-	  Play_Sound('D');
-	  HAL_Delay(100);
-	  Play_Sound('F');
-	  HAL_Delay(100);
-	  Play_Sound('G');
-	  HAL_Delay(100);
+//	  Play_Sound('A');
+//	  HAL_Delay(100);
+//	  Play_Sound('S');
+//	  HAL_Delay(100);
+//	  Play_Sound('D');
+//	  HAL_Delay(100);
+//	  Play_Sound('F');
+//	  HAL_Delay(100);
+//	  Play_Sound('G');
+//	  HAL_Delay(100);
 
-//	  if(HAL_UART_Recieve(&huart2, &character, 1, 100) == HAL_OK) {
-//		  Play_Sound(character);
-//		  HAL_Delay(100);
-//	  }
+	  if(HAL_UART_Receive(&huart2, &character, 1, 100) == HAL_OK) {
+		  Play_Sound(character);
+		  HAL_Delay(100);
+	  }
   }
   /* USER CODE END 3 */
 
