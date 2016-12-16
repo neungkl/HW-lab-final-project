@@ -96,97 +96,70 @@ uint8_t DOWN = 3;
 
 uint8_t DISPLAY_INIT = 0;
 uint8_t DISPLAY_WAITING = 1;
-uint8_t DISPLAY_LEFT = 2;
-uint8_t DISPLAY_RIGHT = 3;
-uint8_t DISPLAY_UP = 4;
-uint8_t DISPLAY_DOWN = 5;
 uint8_t DISPLAY_DIE = 6;
+uint8_t DISPLAY_YOUR_TURN = 7;
+uint8_t DISPLAY_GREAT = 8;
 
 uint16_t i, j, k;
 uint8_t gState = 0;
 
 uint8_t gStartMsg[9][18] = {
-	"+--------------+\n\r",
-	"|              |\n\r",
-	"|   Remember   |\n\r",
-	"|     Game     |\n\r",
-	"|              |\n\r",
-	"|==============|\n\r",
-	"|    Snap To   |\n\r",
-	"|     Start    |\n\r",
-	"+--------------+\n\r"
+	"+--------------+\r\n",
+	"|              |\r\n",
+	"|   Remember   |\r\n",
+	"|     Game     |\r\n",
+	"|              |\r\n",
+	"|==============|\r\n",
+	"|    Snap To   |\r\n",
+	"|     Start    |\r\n",
+	"+--------------+\r\n"
 };
 
 uint8_t gWaitMsg[9][18] = {
-	"+--------------+\n\r",
-	"|              |\n\r",
-	"|   Waiting..  |\n\r",
-	"| .       .    |\n\r",
-	"|      .       |\n\r",
-	"|   .     .    |\n\r",
-	"|              |\n\r",
-	"| .   .     .  |\n\r",
-	"+--------------+\n\r"
-};
-
-uint8_t gUpMsg[9][18] = {
-	"+--------------+\n\r",
-	"|              |\n\r",
-	"|      /\\      |\n\r",
-	"|     /##\\     |\n\r",
-	"|    /####\\    |\n\r",
-	"|     |##|     |\n\r",
-	"|     |##|     |\n\r",
-	"|              |\n\r",
-	"+--------------+\n\r"
-};
-
-uint8_t gDownMsg[9][18] = {
-	"+--------------+\n\r",
-	"|              |\n\r",
-	"|     |##|     |\n\r",
-	"|     |##|     |\n\r",
-	"|    \\####/    |\n\r",
-	"|     \\##/     |\n\r",
-	"|      \\/      |\n\r",
-	"|              |\n\r",
-	"+--------------+\n\r"
-};
-
-uint8_t gLeftMsg[9][18] = {
-	"+--------------+\n\r",
-	"|       \\      |\n\r",
-	"|       ##\\    |\n\r",
-	"|   ########\\  |\n\r",
-	"|   ########/  |\n\r",
-	"|       ##/    |\n\r",
-	"|       /      |\n\r",
-	"|              |\n\r",
-	"+--------------+\n\r"
-};
-
-uint8_t gRightMsg[9][18] = {
-	"+--------------+\n\r",
-	"|      /       |\n\r",
-	"|    /##       |\n\r",
-	"|  /#########  |\n\r",
-	"|  \\#########  |\n\r",
-	"|    \\##       |\n\r",
-	"|      \\       |\n\r",
-	"|              |\n\r",
-	"+--------------+\n\r"
+	"+--------------+\r\n",
+	"|              |\r\n",
+	"|  > Remember  |\r\n",
+	"|  The Light   |\r\n",
+	"|  > Rotate    |\r\n",
+	"| To Following |\r\n",
+	"|    Light     |\r\n",
+	"|              |\r\n",
+	"+--------------+\r\n"
 };
 
 uint8_t gDieMsg[9][18] = {
-	"+--------------+\n\r",
-	"|              |\n\r",
-	"|      You     |\n\r",
-	"|     Lose     |\n\r",
-	"|              |\n\r",
-	"|==============|\n\r",
-	"|    Snap To   |\n\r",
-	"|    Restart   |\n\r",
-	"+--------------+\n\r"
+	"+--------------+\r\n",
+	"|              |\r\n",
+	"|      You     |\r\n",
+	"|     Lose     |\r\n",
+	"|==============|\r\n",
+	"|    Snap To   |\r\n",
+	"|    Restart   |\r\n",
+	"+--------------+\r\n"
+};
+
+uint8_t gYourTurnMsg[9][18] = {
+	"+--------------+\r\n",
+	"|              |\r\n",
+	"|    ++++++    |\r\n",
+	"|     Your     |\r\n",
+	"|     Turn     |\r\n",
+	"|    ++++++    |\r\n",
+	"|              |\r\n",
+	"|              |\r\n",
+	"+--------------+\r\n"
+};
+
+uint8_t gGreatMsg[9][18] = {
+	"+--------------+\r\n",
+	"|              |\r\n",
+	"|    ++++++    |\r\n",
+	"|    Great     |\r\n",
+	"|  Keep Going  |\r\n",
+	"|    ++++++    |\r\n",
+	"|              |\r\n",
+	"|              |\r\n",
+	"+--------------+\r\n"
 };
 
 uint32_t gPrevTime;
@@ -200,20 +173,24 @@ uint32_t random() {
 }
 
 void Game_Display(uint8_t type) {
-	uint8_t **S;
+	uint8_t *S = gStartMsg;
 
 	if(type == DISPLAY_INIT) S = gStartMsg;
 	else if(type == DISPLAY_WAITING) S = gWaitMsg;
-	else if(type == DISPLAY_UP) S = gUpMsg;
-	else if(type == DISPLAY_DOWN) S = gDownMsg;
-	else if(type == DISPLAY_LEFT) S = gLeftMsg;
-	else if(type == DISPLAY_RIGHT) S = gRightMsg;
 	else if(type == DISPLAY_DIE) S = gDieMsg;
+	else if(type == DISPLAY_YOUR_TURN) S = gYourTurnMsg;
+	else if(type == DISPLAY_GREAT) S = gGreatMsg;
 
-	for(i=0; i<9; i++) {
-		HAL_UART_Transmit(&huart2, S[i], 18, 100);
+	if(type == DISPLAY_DIE) {
+		uint8_t buffer[20];
+		sprintf(buffer, "You scores : %d\r\n", gArrowLength - 1);
+		HAL_UART_Transmit(&huart2, S, 8 * 18, 100);
+		HAL_UART_Transmit(&huart2, (uint8_t*)"\r\n", 2, 100);
+		HAL_UART_Transmit(&huart2, buffer, strlen(buffer), 100);
+	} else {
+		HAL_UART_Transmit(&huart2, S, 9 * 18, 100);
+		HAL_UART_Transmit(&huart2, (uint8_t*)"\r\n", 2, 100);
 	}
-	HAL_UART_Transmit(&huart2, (uint8_t*)"\n\r", 2, 100);
 }
 
 uint32_t Game_Random() {
@@ -243,11 +220,10 @@ void Game_Play_Introduce() {
 	gArrows[gArrowLength] = Game_Random() % 4;
 	gArrowLength++;
 
-	uint16_t pinNum = 0;
-
 	for(i=0; i<gArrowLength; i++) {
 		Sound_Random();
 		Game_Show_Light_Direction(gArrows[i], 500);
+
 		HAL_Delay(200);
 	}
 }
@@ -333,7 +309,7 @@ void Audio_Init() {
 	Transmit_Audio_Data(0x02, 0x9E);
 
 	// Adjust Volume
-	Transmit_Audio_Data(0x1D, 0x0F);
+	//Transmit_Audio_Data(0x1D, 0x0F);
 
 }
 
@@ -474,7 +450,7 @@ int main(void)
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
 				HAL_Delay(500);
 				gState = INIT;
-				//Game_Display(DISPLAY_INIT);
+				Game_Display(DISPLAY_INIT);
 			} else {
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 			}
@@ -484,6 +460,7 @@ int main(void)
 				gState = WAITING;
 				gCurTime = 0;
 				Game_Init();
+				Game_Display(DISPLAY_WAITING);
 			} else {
 				if(gCurTime - gPrevTime > 500) {
 					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
@@ -520,8 +497,10 @@ int main(void)
 		} else if(gState == PLAY_INTRODUCE) {
 			Game_Play_Introduce();
 			gState = PLAY;
+			Game_Display(DISPLAY_YOUR_TURN);
 		} else if(gState == PLAY) {
 			if(Game_Check()) {
+				Game_Display(DISPLAY_GREAT);
 				HAL_Delay(500);
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
@@ -539,6 +518,7 @@ int main(void)
 				HAL_Delay(500);
 				gState = PLAY_INTRODUCE;
 			} else {
+				Game_Display(DISPLAY_DIE);
 				for(i=0; i<10; i++) {
 					Sound_Play(0x5A);
 				}
@@ -547,9 +527,11 @@ int main(void)
 			}
 
 		} else if(gState == DIE) {
-			HAL_Delay(1000);
-			gState = INIT;
-			//Game_Display(DISPLAY_INIT);
+			if(Is_Loud()) {
+				gState = WAITING;
+				Game_Init();
+				Game_Display(DISPLAY_WAITING);
+			}
 		}
 
 	}
