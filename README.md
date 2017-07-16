@@ -23,7 +23,7 @@ Your objectives
 
 Main codes (only `main.c` files) and documentation uploaded on `/docs/` directory.
 
-### Project on Instruction 3
+### Final Project (Instruction 3)
 
 I try to create a mini game that test performance of your memory.
 
@@ -37,13 +37,20 @@ Demonstration provided below.
 
 2.1. LIS302DL – 3-axis accelerometer
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/X1yB6p0slpo?list=PLFt9kotlOsQLRj9_FBZgsDHt8URf2Fik9" frameborder="0" allowfullscreen></iframe>
+[![LIS302DL – 3-axis accelerometer](http://img.youtube.com/vi/X1yB6p0slpo/0.jpg)](https://youtu.be/X1yB6p0slpo?list=PLFt9kotlOsQLRj9_FBZgsDHt8URf2Fik9)
 
-2.2. LIS302DL – 3-axis accelerometer
+2.2. MP45DT02 – Digital Microphone
 
-2.3. LIS302DL – 3-axis accelerometer
+[![MP45DT02 – Digital Microphone](http://img.youtube.com/vi/GVRDzz0FhP0/0.jpg)](https://youtu.be/GVRDzz0FhP0?list=PLFt9kotlOsQLRj9_FBZgsDHt8URf2Fik9)
+
+2.3. CS43L22 – audio DAC, speaker driver
+
+[![CS43L22 – audio DAC, speaker driver](http://img.youtube.com/vi/Aepxf0yS_kM/0.jpg)](https://youtu.be/Aepxf0yS_kM?list=PLFt9kotlOsQLRj9_FBZgsDHt8URf2Fik9)
+
 
 3. Final Project
+
+[![CS43L22 – audio DAC, speaker driver](http://img.youtube.com/vi/02R9VJlYNHY/0.jpg)](https://youtu.be/02R9VJlYNHY?list=PLFt9kotlOsQLRj9_FBZgsDHt8URf2Fik9)
 
 ## License
 
